@@ -181,9 +181,4 @@ None of the other existing issues identify `/resume` as a single-process trigger
 
 - `diagnose.py` — general-purpose diagnostic tool. Reports foreign entries, broken chains, duplicate UUIDs, snapshot attribution shifts, slug tracking, orphaned data detection, and timeline reconstruction. Usage: `python3 diagnose.py FILE1.jsonl [FILE2.jsonl ...]`
 - `slim.py` — prints a tab-separated slim view of JSONL entries (timestamp, file, line, type, sessionId, slug, uuid, parentUuid, messageId). Designed for `sort` and `column -ts$'\t'`. Usage: `python3 slim.py FILE1.jsonl [FILE2.jsonl ...]`
-- `one_off/` — (gitignored) one-off repair/analysis scripts with hardcoded paths for specific incidents:
-  - `repair_34c527e6.py` — removes foreign entries from a specific JSONL file
-  - `rebuild_session.py` — traces the message chain and generates a clean new session JSONL
-  - `trace_chain.py` — traces parentUuid references across files to find cross-file links
-  - `check_cross_refs.py` — checks whether two files have UUIDs that only exist in one
-  - `parse_reprex.py` — parses and displays session JSONL files for analysis
+- `one_off/` — (gitignored) one-off repair/analysis scripts with hardcoded paths for specific incidents. See `one_off/CLAUDE.md` for inventory.
