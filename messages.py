@@ -2,15 +2,15 @@
 """
 Print a readable conversation from a Claude Code session JSONL file.
 
-Shows only user and assistant messages, truncated to 400 characters each.
+Shows only user and assistant messages, truncated to a configurable length.
 
 Usage:
-    python3 messages.py FILE.jsonl [FILE2.jsonl ...]
+    python3 messages.py [-n MAX_LEN] FILE.jsonl [FILE2.jsonl ...]
 """
 
+import argparse
 import json
 import os
-import sys
 
 
 def extract_text(msg):
@@ -33,13 +33,27 @@ def extract_text(msg):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print(__doc__)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description='Print a readable conversation from a Claude Code session JSONL file.'
+    )
+    parser.add_argument(
+        '-n', '--max-len',
+        type=int,
+        default=400,
+        help='Truncate each message to this many characters (default: 400; 0 for no truncation).',
+    )
+    parser.add_argument(
+        '--preserve-newlines',
+        action='store_true',
+        help='Preserve newlines within messages; put the message body on the line after the [USER]/[CLAUDE] label.',
+    )
+    parser.add_argument('files', nargs='+', help='JSONL file(s) to read.')
+    args = parser.parse_args()
 
-    max_len = 400
+    max_len = args.max_len
+    preserve_newlines = args.preserve_newlines
 
-    for path in sys.argv[1:]:
+    for path in args.files:
         path = os.path.expanduser(path)
         fname = os.path.basename(path)
 
@@ -55,11 +69,17 @@ def main():
                     continue
 
                 label = 'USER' if t == 'user' else 'CLAUDE'
-                truncated = text[:max_len] + '...' if len(text) > max_len else text
-                # Collapse to single line for readability
-                truncated = truncated.replace('\n', ' ').strip()
+                if max_len > 0 and len(text) > max_len:
+                    truncated = text[:max_len] + '...'
+                else:
+                    truncated = text
 
-                print(f"[{label}] {truncated}")
+                if preserve_newlines:
+                    print(f"[{label}]")
+                    print(truncated.strip())
+                else:
+                    truncated = truncated.replace('\n', ' ').strip()
+                    print(f"[{label}] {truncated}")
                 print()
 
 
