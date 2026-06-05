@@ -11,6 +11,7 @@ Usage:
 import argparse
 import json
 import os
+import sys
 
 
 def extract_text(msg):
@@ -47,19 +48,35 @@ def main():
         action='store_true',
         help='Preserve newlines within messages; put the message body on the line after the [USER]/[CLAUDE] label.',
     )
-    parser.add_argument('files', nargs='+', help='JSONL file(s) to read.')
+    parser.add_argument(
+        '--skip-invalid',
+        action='store_true',
+        help='Silently skip lines that are not valid JSON. Useful when piping through grep -A/-B/-C, which inserts "--" separators.',
+    )
+    parser.add_argument('files', nargs='+', help='JSONL file(s) to read. Use "-" for stdin.')
     args = parser.parse_args()
 
     max_len = args.max_len
     preserve_newlines = args.preserve_newlines
 
     for path in args.files:
-        path = os.path.expanduser(path)
-        fname = os.path.basename(path)
+        if path == '-':
+            fh = sys.stdin
+            close = False
+        else:
+            fh = open(os.path.expanduser(path))
+            close = True
 
-        with open(path) as fh:
+        try:
             for i, line in enumerate(fh, 1):
-                d = json.loads(line.rstrip('\n'))
+                stripped = line.rstrip('\n')
+                if args.skip_invalid:
+                    try:
+                        d = json.loads(stripped)
+                    except json.JSONDecodeError:
+                        continue
+                else:
+                    d = json.loads(stripped)
                 t = d.get('type')
                 if t not in ('user', 'assistant'):
                     continue
@@ -81,6 +98,9 @@ def main():
                     truncated = truncated.replace('\n', ' ').strip()
                     print(f"[{label}] {truncated}")
                 print()
+        finally:
+            if close:
+                fh.close()
 
 
 if __name__ == '__main__':
